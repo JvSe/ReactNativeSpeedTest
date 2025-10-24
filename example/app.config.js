@@ -24,6 +24,14 @@ export default {
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: ['rn-speed-test'],
+    plugins: [
+      [
+        'rn-speed-test',
+        {
+          customProperty: 'example-custom-value',
+          enableFeature: true,
+        },
+      ],
+    ],
   },
 };

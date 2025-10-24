@@ -1,8 +1,19 @@
-const { withAndroidManifest, withInfoPlist } = require('@expo/config-plugins');
+import {
+  AndroidConfig,
+  type ConfigPlugin,
+  withAndroidManifest,
+} from 'expo/config-plugins';
 
-const withSpeedTest = (config) => {
-  // Android permissions
-  config = withAndroidManifest(config, (config) => {
+export interface RNSpeedTestPluginProps {
+  customProperty?: string;
+  enableFeature?: boolean;
+}
+
+export const withAndroidConfiguration: ConfigPlugin<RNSpeedTestPluginProps> = (
+  config,
+  props
+) => {
+  return withAndroidManifest(config, (config) => {
     const androidManifest = config.modResults;
 
     // Add ITSECURITYTEST permission if needed
@@ -29,27 +40,17 @@ const withSpeedTest = (config) => {
       }
     });
 
-    return config;
-  });
+    // Add metadata to main application if needed
+    const mainApplication = AndroidConfig.Manifest.getMainApplicationOrThrow(
+      config.modResults
+    );
 
-  // iOS permissions and configuration
-  config = withInfoPlist(config, (config) => {
-    const infoPlist = config.modResults;
-
-    // Add network usage description
-    infoPlist.NSAppTransportSecurity = {
-      NSAllowsArbitraryLoads: true,
-      NSExceptionDomains: {
-        localhost: {
-          NSExceptionAllowsInsecureHTTPLoads: true,
-        },
-      },
-    };
+    AndroidConfig.Manifest.addMetaDataItemToMainApplication(
+      mainApplication,
+      'rn_speed_test_config_key',
+      props.customProperty || 'default_value'
+    );
 
     return config;
   });
-
-  return config;
 };
-
-module.exports = withSpeedTest;

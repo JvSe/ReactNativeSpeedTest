@@ -24,7 +24,15 @@ Then add the plugin to your `app.config.js`:
 ```javascript
 export default {
   expo: {
-    plugins: ['rn-speed-test'],
+    plugins: [
+      [
+        'rn-speed-test',
+        {
+          customProperty: 'optional-custom-value',
+          enableFeature: true,
+        },
+      ],
+    ],
   },
 };
 ```
@@ -259,6 +267,22 @@ export default function SpeedTestApp() {
   );
 }
 ```
+
+## Plugin Configuration
+
+The Expo plugin supports the following configuration options:
+
+```typescript
+interface RNSpeedTestPluginProps {
+  customProperty?: string; // Custom property for configuration
+  enableFeature?: boolean; // Enable additional features
+}
+```
+
+### Plugin Options
+
+- **customProperty** (optional): A custom string value that can be used for configuration
+- **enableFeature** (optional): A boolean flag to enable additional features
 
 ## URLs de Teste
 

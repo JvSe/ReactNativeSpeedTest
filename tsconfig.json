@@ -1,5 +1,5 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "expo-module-scripts/tsconfig.base",
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "jsx": "react-native",
@@ -9,12 +9,8 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "strict": true,
-    "target": "esnext",
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "./lib/typescript",
-    "rootDir": "./src"
+    "target": "esnext"
   },
-  "include": ["src/**/*", "expo-plugin.js"],
-  "exclude": ["node_modules", "lib", "example"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "lib", "example", "plugin"]
 }
