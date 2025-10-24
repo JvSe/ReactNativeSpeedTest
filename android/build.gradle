@@ -56,6 +56,5 @@ repositories {
 
 dependencies {
     implementation 'com.facebook.react:react-native:+'
-    implementation 'fr.bmartel:jspeedtest:1.32.1'
 }
   

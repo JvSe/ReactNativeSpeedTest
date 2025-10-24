@@ -15,57 +15,22 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
-import fr.bmartel.speedtest.SpeedTestReport;
-import fr.bmartel.speedtest.SpeedTestSocket;
-import fr.bmartel.speedtest.inter.ISpeedTestListener;
-import fr.bmartel.speedtest.model.SpeedTestError;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RNSpeedTestModule extends ReactContextBaseJavaModule {
   private ReactContext reactContext;
-  private SpeedTestSocket mSpeedTestSocket;
   private boolean hasListeners = false;
+  private ExecutorService executorService;
 
   public RNSpeedTestModule(final ReactApplicationContext reactContext) {
     super(reactContext);
     this.reactContext = reactContext;
-    mSpeedTestSocket = new SpeedTestSocket();
-    mSpeedTestSocket.addSpeedTestListener(new ISpeedTestListener() {
-      @Override
-      public void onCompletion(SpeedTestReport report) {
-        if (hasListeners) {
-          WritableMap payload = Arguments.createMap();
-          payload.putDouble("speed", report.getTransferRateBit().doubleValue() / 1000000.0); // Convert to Mbps
-          payload.putDouble("progress", 100.0);
-          reactContext
-                  .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                  .emit("onCompleteTest", payload);
-        }
-      }
-
-      @Override
-      public void onError(SpeedTestError speedTestError, String errorMessage) {
-        if (hasListeners) {
-          WritableMap payload = Arguments.createMap();
-          payload.putString("error", speedTestError.name());
-          payload.putString("message", errorMessage);
-          reactContext
-                  .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                  .emit("onErrorTest", payload);
-        }
-      }
-
-      @Override
-      public void onProgress(float percent, SpeedTestReport report) {
-        if (hasListeners) {
-          WritableMap payload = Arguments.createMap();
-          payload.putDouble("speed", report.getTransferRateBit().doubleValue() / 1000000.0); // Convert to Mbps
-          payload.putDouble("progress", percent);
-          reactContext
-                  .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                  .emit("onCompleteEpoch", payload);
-        }
-      }
-    });
+    this.executorService = Executors.newCachedThreadPool();
   }
 
   @Override
@@ -82,58 +47,188 @@ public class RNSpeedTestModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void testDownloadSpeed(String url, int timeout, int reportInterval) {
-    try {
-      mSpeedTestSocket.startFixedDownload(url, timeout, reportInterval);
-    } catch (Exception e) {
-      if (hasListeners) {
-        WritableMap payload = Arguments.createMap();
-        payload.putString("error", "DOWNLOAD_ERROR");
-        payload.putString("message", e.getMessage());
-        reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit("onErrorTest", payload);
+    if (!hasListeners) return;
+    
+    executorService.execute(() -> {
+      try {
+        long startTime = System.currentTimeMillis();
+        URL downloadUrl = new URL(url);
+        HttpURLConnection connection = (HttpURLConnection) downloadUrl.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(timeout);
+        connection.setReadTimeout(timeout);
+        connection.setDoInput(true);
+        
+        int responseCode = connection.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+          InputStream inputStream = connection.getInputStream();
+          byte[] buffer = new byte[8192];
+          int bytesRead;
+          long totalBytes = 0;
+          
+          while ((bytesRead = inputStream.read(buffer)) != -1) {
+            totalBytes += bytesRead;
+            
+            // Emit progress
+            long currentTime = System.currentTimeMillis();
+            double elapsedSeconds = (currentTime - startTime) / 1000.0;
+            double speedMbps = (totalBytes * 8.0) / (elapsedSeconds * 1000000.0);
+            double progress = Math.min(100.0, (elapsedSeconds / (timeout / 1000.0)) * 100.0);
+            
+            if (hasListeners) {
+              WritableMap payload = Arguments.createMap();
+              payload.putDouble("speed", speedMbps);
+              payload.putDouble("progress", progress);
+              reactContext
+                      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                      .emit("onCompleteEpoch", payload);
+            }
+          }
+          
+          inputStream.close();
+          
+          // Emit completion
+          long endTime = System.currentTimeMillis();
+          double totalSeconds = (endTime - startTime) / 1000.0;
+          double finalSpeed = (totalBytes * 8.0) / (totalSeconds * 1000000.0);
+          
+          if (hasListeners) {
+            WritableMap payload = Arguments.createMap();
+            payload.putDouble("speed", finalSpeed);
+            payload.putDouble("progress", 100.0);
+            reactContext
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("onCompleteTest", payload);
+          }
+        } else {
+          throw new IOException("HTTP Error: " + responseCode);
+        }
+        
+        connection.disconnect();
+      } catch (Exception e) {
+        if (hasListeners) {
+          WritableMap payload = Arguments.createMap();
+          payload.putString("error", "DOWNLOAD_ERROR");
+          payload.putString("message", e.getMessage());
+          reactContext
+                  .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                  .emit("onErrorTest", payload);
+        }
       }
-    }
+    });
   }
 
   @ReactMethod
   public void testUploadSpeed(String url, int timeout, int reportInterval) {
-    try {
-      mSpeedTestSocket.startFixedUpload(url, 10000000, timeout, reportInterval);
-    } catch (Exception e) {
-      if (hasListeners) {
-        WritableMap payload = Arguments.createMap();
-        payload.putString("error", "UPLOAD_ERROR");
-        payload.putString("message", e.getMessage());
-        reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit("onErrorTest", payload);
+    if (!hasListeners) return;
+    
+    executorService.execute(() -> {
+      try {
+        long startTime = System.currentTimeMillis();
+        URL uploadUrl = new URL(url);
+        HttpURLConnection connection = (HttpURLConnection) uploadUrl.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setConnectTimeout(timeout);
+        connection.setReadTimeout(timeout);
+        connection.setDoOutput(true);
+        connection.setDoInput(true);
+        connection.setRequestProperty("Content-Type", "application/octet-stream");
+        
+        // Generate test data (1MB)
+        byte[] testData = new byte[1024 * 1024]; // 1MB
+        for (int i = 0; i < testData.length; i++) {
+          testData[i] = (byte) (i % 256);
+        }
+        
+        connection.getOutputStream().write(testData);
+        connection.getOutputStream().flush();
+        connection.getOutputStream().close();
+        
+        int responseCode = connection.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
+          // Emit progress
+          long currentTime = System.currentTimeMillis();
+          double elapsedSeconds = (currentTime - startTime) / 1000.0;
+          double speedMbps = (testData.length * 8.0) / (elapsedSeconds * 1000000.0);
+          
+          if (hasListeners) {
+            WritableMap payload = Arguments.createMap();
+            payload.putDouble("speed", speedMbps);
+            payload.putDouble("progress", 100.0);
+            reactContext
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("onCompleteTest", payload);
+          }
+        } else {
+          throw new IOException("HTTP Error: " + responseCode);
+        }
+        
+        connection.disconnect();
+      } catch (Exception e) {
+        if (hasListeners) {
+          WritableMap payload = Arguments.createMap();
+          payload.putString("error", "UPLOAD_ERROR");
+          payload.putString("message", e.getMessage());
+          reactContext
+                  .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                  .emit("onErrorTest", payload);
+        }
       }
-    }
+    });
   }
 
   @ReactMethod
   public void pingTest(String url, int timeout) {
-    // Simple ping implementation - in a real implementation you might want to use a proper ping library
-    try {
-      // For now, we'll simulate a ping test
-      // In a production app, you'd want to implement actual ICMP ping
-      if (hasListeners) {
-        WritableMap payload = Arguments.createMap();
-        payload.putDouble("speed", 50.0); // Simulated latency in ms
-        reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit("onCompleteTest", payload);
+    if (!hasListeners) return;
+    
+    executorService.execute(() -> {
+      try {
+        long startTime = System.currentTimeMillis();
+        URL pingUrl = new URL(url);
+        HttpURLConnection connection = (HttpURLConnection) pingUrl.openConnection();
+        connection.setRequestMethod("HEAD");
+        connection.setConnectTimeout(timeout);
+        connection.setReadTimeout(timeout);
+        
+        int responseCode = connection.getResponseCode();
+        long endTime = System.currentTimeMillis();
+        long latency = endTime - startTime;
+        
+        if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_NO_CONTENT) {
+          if (hasListeners) {
+            WritableMap payload = Arguments.createMap();
+            payload.putDouble("speed", latency); // Return latency as speed for ping
+            payload.putDouble("latency", latency);
+            reactContext
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("onCompleteTest", payload);
+          }
+        } else {
+          throw new IOException("HTTP Error: " + responseCode);
+        }
+        
+        connection.disconnect();
+      } catch (Exception e) {
+        if (hasListeners) {
+          WritableMap payload = Arguments.createMap();
+          payload.putString("error", "PING_ERROR");
+          payload.putString("message", e.getMessage());
+          reactContext
+                  .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                  .emit("onErrorTest", payload);
+        }
       }
-    } catch (Exception e) {
-      if (hasListeners) {
-        WritableMap payload = Arguments.createMap();
-        payload.putString("error", "PING_ERROR");
-        payload.putString("message", e.getMessage());
-        reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit("onErrorTest", payload);
-      }
+    });
+  }
+
+  @ReactMethod
+  public void cancelTest() {
+    if (hasListeners) {
+      WritableMap payload = Arguments.createMap();
+      payload.putBoolean("cancelled", true);
+      reactContext
+              .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+              .emit("onTestCanceled", payload);
     }
   }
 
