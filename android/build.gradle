@@ -1,37 +1,61 @@
 
 buildscript {
-    repositories {
-        jcenter()
+    ext {
+        buildToolsVersion = "33.0.0"
+        minSdkVersion = 21
+        compileSdkVersion = 33
+        targetSdkVersion = 33
+        ndkVersion = "23.1.7779620"
     }
-
+    repositories {
+        google()
+        mavenCentral()
+    }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.3.1'
+        classpath("com.android.tools.build:gradle:7.3.1")
+        classpath("com.facebook.react:react-native-gradle-plugin")
     }
 }
 
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.1"
+    ndkVersion rootProject.ext.ndkVersion
 
+    compileSdkVersion rootProject.ext.compileSdkVersion
+
+    namespace "com.saitbnzl.rnspeedtest"
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 22
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "2.0.0"
     }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
     lintOptions {
-        abortOnError false
+        disable 'GradleCompatible'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
 repositories {
+    google()
     mavenCentral()
+    maven { url "https://www.jitpack.io" }
 }
 
 dependencies {
-    compile 'com.facebook.react:react-native:+'
-    compile 'fr.bmartel:jspeedtest:1.32.1'
+    implementation 'com.facebook.react:react-native:+'
+    implementation 'fr.bmartel:jspeedtest:1.32.1'
 }
   

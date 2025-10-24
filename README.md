@@ -1,44 +1,366 @@
-
 # react-native-speed-test
 
-## Getting started
+A React Native library for testing network speed (download, upload) and ping latency, compatible with Expo and bare React Native projects.
 
-`$ npm install react-native-speed-test --save`
+## Features
 
-### Mostly automatic installation
+- ✅ **Expo Compatible** - Works with Expo managed workflow
+- ✅ **TypeScript Support** - Full TypeScript definitions included
+- ✅ **Cross Platform** - iOS and Android support
+- ✅ **Network Type Detection** - Detect WiFi, 2G, 3G, LTE connections
+- ✅ **Real-time Progress** - Get real-time speed test progress
+- ✅ **Modern APIs** - Uses latest React Native and native APIs
 
-`$ react-native link react-native-speed-test`
+## Installation
 
-### Manual installation
+### Expo (Recommended)
 
+```bash
+npx expo install react-native-speed-test
+```
+
+Then add the plugin to your `app.config.js`:
+
+```javascript
+export default {
+  expo: {
+    plugins: ['react-native-speed-test'],
+  },
+};
+```
+
+### React Native CLI
+
+```bash
+npm install react-native-speed-test
+# or
+yarn add react-native-speed-test
+```
 
 #### iOS
 
-1. In XCode, in the project navigator, right click `Libraries` ➜ `Add Files to [your project's name]`
-2. Go to `node_modules` ➜ `react-native-speed-test` and add `RNSpeedTest.xcodeproj`
-3. In XCode, in the project navigator, select your project. Add `libRNSpeedTest.a` to your project's `Build Phases` ➜ `Link Binary With Libraries`
-4. Run your project (`Cmd+R`)<
+For iOS, you need to run `pod install`:
+
+```bash
+cd ios && pod install
+```
 
 #### Android
 
-1. Open up `android/app/src/main/java/[...]/MainActivity.java`
-  - Add `import com.saitbnzl.rnspeedtest.RNSpeedTestPackage;` to the imports at the top of the file
-  - Add `new RNSpeedTestPackage()` to the list returned by the `getPackages()` method
-2. Append the following lines to `android/settings.gradle`:
-  	```
-  	include ':react-native-speed-test'
-  	project(':react-native-speed-test').projectDir = new File(rootProject.projectDir, 	'../node_modules/react-native-speed-test/android')
-  	```
-3. Insert the following lines inside the dependencies block in `android/app/build.gradle`:
-  	```
-      compile project(':react-native-speed-test')
-  	```
+No additional setup required for Android.
 
 ## Usage
-```javascript
-import RNSpeedTest from 'react-native-speed-test';
 
-// TODO: What to do with the module?
-RNSpeedTest;
+### Basic Usage
+
+```typescript
+import SpeedTest from 'react-native-speed-test';
+
+// Test download speed
+SpeedTest.testDownloadSpeed({
+  url: 'https://httpbin.org/bytes/10485760', // 10MB file
+  timeout: 30000,
+  reportInterval: 1000,
+});
+
+// Test upload speed
+SpeedTest.testUploadSpeed({
+  url: 'https://httpbin.org/post',
+  timeout: 30000,
+  reportInterval: 1000,
+});
+
+// Test ping latency
+SpeedTest.testPing({
+  url: 'https://www.google.com',
+  timeout: 5000,
+});
+
+// Get network type
+const networkType = await SpeedTest.getNetworkType();
+console.log('Network type:', networkType.type); // 'WIFI', '2G', '3G', 'LTE', etc.
 ```
-  
+
+### With Event Listeners
+
+```typescript
+import { useEffect } from 'react';
+import SpeedTest, { SpeedTestProgress, SpeedTestResult } from 'react-native-speed-test';
+
+export default function SpeedTestScreen() {
+  useEffect(() => {
+    // Listen for progress updates
+    const progressListener = SpeedTest.addListener('onCompleteEpoch', (data: SpeedTestProgress) => {
+      console.log('Current speed:', data.speed, 'Mbps');
+      console.log('Progress:', data.progress, '%');
+    });
+
+    // Listen for test completion
+    const completeListener = SpeedTest.addListener('onCompleteTest', (data: SpeedTestResult) => {
+      console.log('Final speed:', data.speed, 'Mbps');
+    });
+
+    // Listen for errors
+    const errorListener = SpeedTest.addListener('onErrorTest', (error) => {
+      console.error('Speed test error:', error);
+    });
+
+    return () => {
+      // Clean up listeners
+      progressListener.remove();
+      completeListener.remove();
+      errorListener.remove();
+    };
+  }, []);
+
+  const startDownloadTest = () => {
+    SpeedTest.testDownloadSpeed({
+      url: 'https://httpbin.org/bytes/10485760',
+      timeout: 30000,
+      reportInterval: 1000
+    });
+  };
+
+  const cancelTest = () => {
+    try {
+      SpeedTest.cancelTest();
+      console.log('Test cancelled');
+    } catch (error) {
+      console.error('Failed to cancel test:', error);
+    }
+  };
+
+  return (
+    // Your UI components here
+  );
+}
+```
+
+### Complete Example
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import { View, Text, Button, Alert } from 'react-native';
+import SpeedTest, {
+  NetworkType,
+  SpeedTestResult,
+} from 'react-native-speed-test';
+
+export default function SpeedTestApp() {
+  const [networkType, setNetworkType] = useState<NetworkType | null>(null);
+  const [currentSpeed, setCurrentSpeed] = useState<number>(0);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Get initial network type
+    getNetworkType();
+
+    // Set up event listeners
+    const progressListener = SpeedTest.addListener(
+      'onCompleteEpoch',
+      (data) => {
+        setCurrentSpeed(data.speed);
+      }
+    );
+
+    const completeListener = SpeedTest.addListener(
+      'onCompleteTest',
+      (data: SpeedTestResult) => {
+        setCurrentSpeed(data.speed);
+        setIsRunning(false);
+        Alert.alert(
+          'Test Complete',
+          `Final speed: ${data.speed.toFixed(2)} Mbps`
+        );
+      }
+    );
+
+    const errorListener = SpeedTest.addListener('onErrorTest', (error) => {
+      setIsRunning(false);
+      Alert.alert('Error', error.message || 'Speed test failed');
+    });
+
+    return () => {
+      progressListener.remove();
+      completeListener.remove();
+      errorListener.remove();
+    };
+  }, []);
+
+  const getNetworkType = async () => {
+    try {
+      const type = await SpeedTest.getNetworkType();
+      setNetworkType(type);
+    } catch (error) {
+      console.error('Failed to get network type:', error);
+    }
+  };
+
+  const startDownloadTest = () => {
+    setIsRunning(true);
+    SpeedTest.testDownloadSpeed({
+      url: 'https://httpbin.org/bytes/10485760',
+      timeout: 30000,
+      reportInterval: 1000,
+    });
+  };
+
+  const startUploadTest = () => {
+    setIsRunning(true);
+    SpeedTest.testUploadSpeed({
+      url: 'https://httpbin.org/post',
+      timeout: 30000,
+      reportInterval: 1000,
+    });
+  };
+
+  const startPingTest = () => {
+    setIsRunning(true);
+    SpeedTest.testPing({
+      url: 'https://www.google.com',
+      timeout: 5000,
+    });
+  };
+
+  const cancelTest = () => {
+    try {
+      SpeedTest.cancelTest();
+      setIsRunning(false);
+    } catch (error) {
+      console.error('Failed to cancel test:', error);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, padding: 20 }}>
+      <Text style={{ fontSize: 24, marginBottom: 20 }}>Speed Test</Text>
+
+      {networkType && (
+        <Text style={{ marginBottom: 20 }}>Network: {networkType.type}</Text>
+      )}
+
+      <Text style={{ marginBottom: 20 }}>
+        Current Speed: {currentSpeed.toFixed(2)} Mbps
+      </Text>
+
+      <Button
+        title="Test Download Speed"
+        onPress={startDownloadTest}
+        disabled={isRunning}
+      />
+
+      <Button
+        title="Test Upload Speed"
+        onPress={startUploadTest}
+        disabled={isRunning}
+      />
+
+      <Button title="Test Ping" onPress={startPingTest} disabled={isRunning} />
+
+      {isRunning && <Button title="Cancel Test" onPress={cancelTest} />}
+    </View>
+  );
+}
+```
+
+## URLs de Teste
+
+O pacote usa URLs reais e funcionais para testes de velocidade:
+
+- **Download**: `https://httpbin.org/bytes/10485760` (arquivo de 10MB)
+- **Upload**: `https://httpbin.org/post` (endpoint para POST requests)
+- **Ping**: `https://www.google.com` (servidor confiável para ping)
+
+Você pode usar suas próprias URLs se necessário, mas as URLs padrão são otimizadas para testes de velocidade.
+
+## API Reference
+
+### Methods
+
+#### `testDownloadSpeed(config?: SpeedTestConfig): void`
+
+Test download speed with the given configuration.
+
+#### `testUploadSpeed(config?: SpeedTestConfig): void`
+
+Test upload speed with the given configuration.
+
+#### `testPing(config: PingConfig): void`
+
+Test ping latency to the given URL.
+
+#### `getNetworkType(): Promise<NetworkType>`
+
+Get the current network type.
+
+#### `cancelTest(): void`
+
+Cancel the currently running speed test.
+
+#### `addListener(eventName: string, listener: (data: any) => void): EmitterSubscription`
+
+Add an event listener for speed test events.
+
+#### `removeAllListeners(eventName?: string): void`
+
+Remove all event listeners.
+
+#### `isAvailable(): boolean`
+
+Check if the native module is available.
+
+### Types
+
+```typescript
+interface SpeedTestConfig {
+  url?: string; // Test URL (default: httpbin.org/bytes/10485760 for download, httpbin.org/post for upload)
+  epochSize?: number; // Number of epochs (default: 1)
+  timeout?: number; // Timeout in milliseconds (default: 30000)
+  reportInterval?: number; // Report interval in milliseconds (default: 1000)
+}
+
+interface PingConfig {
+  url?: string; // Target URL (default: https://www.google.com)
+  timeout: number; // Timeout in milliseconds
+  count?: number; // Number of ping attempts
+}
+
+interface SpeedTestResult {
+  speed: number; // Speed in Mbps
+  latency?: number; // Latency in ms (for ping tests)
+}
+
+interface SpeedTestProgress {
+  speed: number; // Current speed in Mbps
+  progress?: number; // Progress percentage (0-100)
+}
+
+interface NetworkType {
+  type: 'WIFI' | '2G' | '3G' | 'LTE' | '5G' | 'NONE' | 'UNKNOWN';
+}
+```
+
+### Events
+
+- `onCompleteEpoch` - Fired during the test with progress updates
+- `onCompleteTest` - Fired when the test completes
+- `onErrorTest` - Fired when an error occurs
+- `onTestCanceled` - Fired when the test is cancelled
+
+## Requirements
+
+- React Native >= 0.60.0
+- iOS >= 11.0
+- Android API Level >= 21
+
+## License
+
+MIT
+
+## Contributing
+
+Contributions are welcome! Please read our contributing guidelines and submit pull requests to our GitHub repository.
+
+## Support
+
+If you encounter any issues or have questions, please file an issue on our GitHub repository.

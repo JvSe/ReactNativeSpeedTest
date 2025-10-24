@@ -4,13 +4,14 @@
 #else
 #import <React/RCTBridgeModule.h>
 #import <React/RCTEventEmitter.h>
-#import "Reachability.h"
-#import<CoreTelephony/CTTelephonyNetworkInfo.h>
-#import "GBPing/GBPing.h"
 #endif
-Reachability* reachability;
 
-@interface RNSpeedTest : RCTEventEmitter <RCTBridgeModule, NSURLSessionDelegate, NSURLSessionDataDelegate, GBPingDelegate>
+#import <Network/Network.h>
+#import <SystemConfiguration/SystemConfiguration.h>
+#import <CoreTelephony/CTTelephonyNetworkInfo.h>
+
+@interface RNSpeedTest : RCTEventEmitter <RCTBridgeModule, NSURLSessionDelegate, NSURLSessionDataDelegate>
+
 @property (nonatomic) CFAbsoluteTime startTime;
 @property (nonatomic) CFAbsoluteTime stopTime;
 @property (nonatomic) CFAbsoluteTime lastElapsed;
@@ -24,6 +25,7 @@ Reachability* reachability;
 @property (nonatomic) NSDate *start;
 @property (nonatomic) int pingTimeout;
 @property (nonatomic) int stage;
-@property (strong, nonatomic) GBPing *ping;
+@property (nonatomic) BOOL hasListeners;
+
 @end
   
