@@ -109,14 +109,13 @@ export class SpeedTest {
 
     const {
       url = this.DEFAULT_URLS.download,
-      epochSize = 1,
       timeout = 30000,
       reportInterval = 1000,
     } = config;
 
     try {
       if (Platform.OS === 'ios') {
-        RNSpeedTest.testDownloadSpeedWithTimeout(url, epochSize, timeout);
+        RNSpeedTest.testDownloadSpeedWithTimeout(url, 1, timeout);
       } else if (Platform.OS === 'android') {
         RNSpeedTest.testDownloadSpeed(url, timeout, reportInterval);
       } else {
@@ -137,14 +136,13 @@ export class SpeedTest {
 
     const {
       url = this.DEFAULT_URLS.upload,
-      epochSize = 1,
       timeout = 30000,
       reportInterval = 1000,
     } = config;
 
     try {
       if (Platform.OS === 'ios') {
-        RNSpeedTest.testUploadSpeedWithTimeout(url, epochSize, timeout);
+        RNSpeedTest.testUploadSpeedWithTimeout(url, 1, timeout);
       } else if (Platform.OS === 'android') {
         RNSpeedTest.testUploadSpeed(url, timeout, reportInterval);
       } else {

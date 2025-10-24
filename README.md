@@ -62,39 +62,58 @@ No additional setup required for Android.
 ### Using Hooks (Recommended)
 
 ```typescript
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Button } from 'react-native';
 import { useSpeedTest } from 'rn-speed-test';
 
 export default function SpeedTestComponent() {
   const {
     isRunning,
-    currentSpeed,
-    downloadResult,
-    uploadResult,
-    pingResult,
-    startDownloadTest,
-    startUploadTest,
-    startPingTest,
-    cancelTest,
+    error,
+    testDownload,
+    testUpload,
+    testPing,
+    runAllTests,
+    resetResults,
   } = useSpeedTest();
+
+  const [downloadSpeed, setDownloadSpeed] = useState<number | null>(null);
+  const [uploadSpeed, setUploadSpeed] = useState<number | null>(null);
+  const [pingLatency, setPingLatency] = useState<number | null>(null);
+
+  const handleRunAllTests = async () => {
+    try {
+      const results = await runAllTests();
+      setDownloadSpeed(results.downloadSpeed);
+      setUploadSpeed(results.uploadSpeed);
+      setPingLatency(results.pingLatency);
+    } catch (err) {
+      console.error('Tests failed:', err);
+    }
+  };
 
   return (
     <View>
       <Text>Running: {isRunning ? 'Yes' : 'No'}</Text>
-      <Text>Current Speed: {currentSpeed.toFixed(2)} Mbps</Text>
 
-      {downloadResult && (
-        <Text>Download: {downloadResult.speed.toFixed(2)} Mbps</Text>
-      )}
+      <Text>
+        Download:{' '}
+        {downloadSpeed ? `${downloadSpeed.toFixed(2)} Mbps` : 'Not tested'}
+      </Text>
+      <Text>
+        Upload: {uploadSpeed ? `${uploadSpeed.toFixed(2)} Mbps` : 'Not tested'}
+      </Text>
+      <Text>
+        Ping: {pingLatency ? `${pingLatency.toFixed(0)} ms` : 'Not tested'}
+      </Text>
 
       <Button
-        title="Test Download"
-        onPress={() => startDownloadTest()}
+        title="Run All Tests"
+        onPress={handleRunAllTests}
         disabled={isRunning}
       />
 
-      <Button title="Cancel Test" onPress={cancelTest} disabled={!isRunning} />
+      <Button title="Reset Results" onPress={resetResults} />
     </View>
   );
 }
@@ -401,7 +420,7 @@ Você pode usar suas próprias URLs se necessário, mas as URLs padrão são oti
 
 ### useSpeedTest
 
-Hook principal para testes de velocidade com funcionalidades completas e interface simplificada.
+Hook principal para testes de velocidade com interface simplificada.
 
 ```typescript
 const {
@@ -411,29 +430,23 @@ const {
   progress: number;
   networkType: NetworkType | null;
 
-  // Resultados simples
-  downloadSpeed: number | null;
-  uploadSpeed: number | null;
-  pingLatency: number | null;
-
-  // Resultados completos
-  downloadResult: SpeedTestResult | null;
-  uploadResult: SpeedTestResult | null;
-  pingResult: SpeedTestResult | null;
-
   // Estados de erro
   error: string | null;
   testType: 'download' | 'upload' | 'ping' | null;
 
-  // Funções simplificadas
-  testDownload: () => void;
-  testUpload: () => void;
-  testPing: () => void;
+  // Função única para executar todos os testes
+  runAllTests: () => Promise<{
+    downloadSpeed: number;
+    uploadSpeed: number;
+    pingLatency: number;
+  }>;
 
-  // Funções avançadas
-  startDownloadTest: (config?: SpeedTestConfig) => void;
-  startUploadTest: (config?: SpeedTestConfig) => void;
-  startPingTest: (config: PingConfig) => void;
+  // Funções individuais (retornam valores)
+  testDownload: () => Promise<number>;
+  testUpload: () => Promise<number>;
+  testPing: () => Promise<number>;
+
+  // Funções de controle
   cancelTest: () => void;
   resetResults: () => void;
   getNetworkType: () => Promise<void>;

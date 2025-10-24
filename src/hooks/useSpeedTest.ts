@@ -1,49 +1,39 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import SpeedTest, {
   NetworkType,
-  PingConfig,
-  SpeedTestConfig,
   SpeedTestProgress,
   SpeedTestResult,
 } from '../index';
 
 export interface UseSpeedTestReturn {
-  // Estado dos testes
+  // Estados principais
   isRunning: boolean;
   currentSpeed: number;
   progress: number;
   networkType: NetworkType | null;
 
-  // Resultados dos testes (valores simples)
-  downloadSpeed: number | null;
-  uploadSpeed: number | null;
-  pingLatency: number | null;
-
-  // Resultados completos (opcional)
-  downloadResult: SpeedTestResult | null;
-  uploadResult: SpeedTestResult | null;
-  pingResult: SpeedTestResult | null;
-
   // Estados de erro
   error: string | null;
   testType: 'download' | 'upload' | 'ping' | null;
 
-  // Funções de teste simplificadas
-  testDownload: () => void;
-  testUpload: () => void;
-  testPing: () => void;
+  // Função única para executar todos os testes
+  runAllTests: () => Promise<{
+    downloadSpeed: number;
+    uploadSpeed: number;
+    pingLatency: number;
+  }>;
 
-  // Funções de teste avançadas
-  startDownloadTest: (config?: SpeedTestConfig) => void;
-  startUploadTest: (config?: SpeedTestConfig) => void;
-  startPingTest: (config: PingConfig) => void;
+  // Funções individuais (retornam valores)
+  testDownload: () => Promise<number>;
+  testUpload: () => Promise<number>;
+  testPing: () => Promise<number>;
 
   // Funções de controle
   cancelTest: () => void;
   resetResults: () => void;
   getNetworkType: () => Promise<void>;
 
-  // Funções de configuração
+  // Função para definir erro manualmente
   setError: (error: string | null) => void;
 }
 
@@ -53,15 +43,6 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
   const [currentSpeed, setCurrentSpeed] = useState(0);
   const [progress, setProgress] = useState(0);
   const [networkType, setNetworkType] = useState<NetworkType | null>(null);
-
-  // Resultados dos testes
-  const [downloadResult, setDownloadResult] = useState<SpeedTestResult | null>(
-    null
-  );
-  const [uploadResult, setUploadResult] = useState<SpeedTestResult | null>(
-    null
-  );
-  const [pingResult, setPingResult] = useState<SpeedTestResult | null>(null);
 
   // Estados de erro e tipo de teste
   const [error, setError] = useState<string | null>(null);
@@ -81,9 +62,9 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
       return;
     }
 
-    // Configurar listeners de eventos
+    // Configurar listeners de eventos - CORRIGIDO: usar os nomes corretos dos eventos
     const progressListener = SpeedTest.addListener(
-      'onProgressTest',
+      'onCompleteEpoch', // CORRIGIDO: era 'onProgressTest'
       (data: SpeedTestProgress) => {
         if (isMountedRef.current) {
           setCurrentSpeed(data.speed);
@@ -100,20 +81,6 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         if (isMountedRef.current) {
           setIsRunning(false);
           setProgress(100);
-
-          // Definir resultado baseado no tipo de teste atual
-          switch (testType) {
-            case 'download':
-              setDownloadResult(data);
-              break;
-            case 'upload':
-              setUploadResult(data);
-              break;
-            case 'ping':
-              setPingResult(data);
-              break;
-          }
-
           setTestType(null);
           setError(null);
         }
@@ -154,64 +121,184 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
   }, [testType]);
 
   // Função para iniciar teste de download
-  const startDownloadTest = useCallback((config: SpeedTestConfig = {}) => {
-    try {
-      setError(null);
-      setIsRunning(true);
-      setTestType('download');
-      setCurrentSpeed(0);
-      setProgress(0);
-      setDownloadResult(null);
+  const testDownload = useCallback((): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      try {
+        setError(null);
+        setIsRunning(true);
+        setTestType('download');
+        setCurrentSpeed(0);
+        setProgress(0);
 
-      SpeedTest.testDownloadSpeed(config);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to start download test'
-      );
-      setIsRunning(false);
-      setTestType(null);
-    }
-  }, []);
+        const listener = SpeedTest.addListener(
+          'onCompleteTest',
+          (data: SpeedTestResult) => {
+            if (testType === 'download') {
+              setIsRunning(false);
+              setTestType(null);
+              setProgress(100);
+              listener.remove();
+              resolve(data.speed);
+            }
+          }
+        );
+
+        const errorListener = SpeedTest.addListener(
+          'onErrorTest',
+          (data: { message: string }) => {
+            setIsRunning(false);
+            setTestType(null);
+            setError(data.message);
+            errorListener.remove();
+            reject(new Error(data.message));
+          }
+        );
+
+        SpeedTest.testDownloadSpeed({
+          timeout: 30000,
+          reportInterval: 1000,
+        });
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to start download test'
+        );
+        setIsRunning(false);
+        setTestType(null);
+        reject(err);
+      }
+    });
+  }, [testType]);
 
   // Função para iniciar teste de upload
-  const startUploadTest = useCallback((config: SpeedTestConfig = {}) => {
-    try {
-      setError(null);
-      setIsRunning(true);
-      setTestType('upload');
-      setCurrentSpeed(0);
-      setProgress(0);
-      setUploadResult(null);
+  const testUpload = useCallback((): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      try {
+        setError(null);
+        setIsRunning(true);
+        setTestType('upload');
+        setCurrentSpeed(0);
+        setProgress(0);
 
-      SpeedTest.testUploadSpeed(config);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to start upload test'
-      );
-      setIsRunning(false);
-      setTestType(null);
-    }
-  }, []);
+        const listener = SpeedTest.addListener(
+          'onCompleteTest',
+          (data: SpeedTestResult) => {
+            if (testType === 'upload') {
+              setIsRunning(false);
+              setTestType(null);
+              setProgress(100);
+              listener.remove();
+              resolve(data.speed);
+            }
+          }
+        );
+
+        const errorListener = SpeedTest.addListener(
+          'onErrorTest',
+          (data: { message: string }) => {
+            setIsRunning(false);
+            setTestType(null);
+            setError(data.message);
+            errorListener.remove();
+            reject(new Error(data.message));
+          }
+        );
+
+        SpeedTest.testUploadSpeed({
+          timeout: 30000,
+          reportInterval: 1000,
+        });
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to start upload test'
+        );
+        setIsRunning(false);
+        setTestType(null);
+        reject(err);
+      }
+    });
+  }, [testType]);
 
   // Função para iniciar teste de ping
-  const startPingTest = useCallback((config: PingConfig) => {
+  const testPing = useCallback((): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      try {
+        setError(null);
+        setIsRunning(true);
+        setTestType('ping');
+        setCurrentSpeed(0);
+        setProgress(0);
+
+        const listener = SpeedTest.addListener(
+          'onCompleteTest',
+          (data: SpeedTestResult) => {
+            if (testType === 'ping') {
+              setIsRunning(false);
+              setTestType(null);
+              setProgress(100);
+              listener.remove();
+              resolve(data.latency || data.speed);
+            }
+          }
+        );
+
+        const errorListener = SpeedTest.addListener(
+          'onErrorTest',
+          (data: { message: string }) => {
+            setIsRunning(false);
+            setTestType(null);
+            setError(data.message);
+            errorListener.remove();
+            reject(new Error(data.message));
+          }
+        );
+
+        SpeedTest.testPing({
+          timeout: 5000,
+        });
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to start ping test'
+        );
+        setIsRunning(false);
+        setTestType(null);
+        reject(err);
+      }
+    });
+  }, [testType]);
+
+  // Função única para executar todos os testes
+  const runAllTests = useCallback(async () => {
     try {
       setError(null);
       setIsRunning(true);
-      setTestType('ping');
       setCurrentSpeed(0);
       setProgress(0);
-      setPingResult(null);
 
-      SpeedTest.testPing(config);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to start ping test'
-      );
+      // Executar teste de download
+      const downloadSpeed = await testDownload();
+
+      // Executar teste de upload
+      const uploadSpeed = await testUpload();
+
+      // Executar teste de ping
+      const pingLatency = await testPing();
+
       setIsRunning(false);
       setTestType(null);
+      setProgress(100);
+
+      return {
+        downloadSpeed,
+        uploadSpeed,
+        pingLatency,
+      };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to run tests');
+      setIsRunning(false);
+      setTestType(null);
+      throw err;
     }
-  }, []);
+  }, [testDownload, testUpload, testPing]);
 
   // Função para cancelar teste
   const cancelTest = useCallback(() => {
@@ -236,9 +323,6 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
 
   // Função para resetar resultados
   const resetResults = useCallback(() => {
-    setDownloadResult(null);
-    setUploadResult(null);
-    setPingResult(null);
     setCurrentSpeed(0);
     setProgress(0);
     setError(null);
@@ -250,19 +334,6 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
     setError(error);
   }, []);
 
-  // Funções simplificadas
-  const testDownload = useCallback(() => {
-    startDownloadTest();
-  }, [startDownloadTest]);
-
-  const testUpload = useCallback(() => {
-    startUploadTest();
-  }, [startUploadTest]);
-
-  const testPing = useCallback(() => {
-    startPingTest({ timeout: 5000 });
-  }, [startPingTest]);
-
   return {
     // Estados
     isRunning,
@@ -270,29 +341,17 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
     progress,
     networkType,
 
-    // Resultados simples
-    downloadSpeed: downloadResult?.speed || null,
-    uploadSpeed: uploadResult?.speed || null,
-    pingLatency: pingResult?.latency || null,
-
-    // Resultados completos
-    downloadResult,
-    uploadResult,
-    pingResult,
-
     // Estados de erro e tipo
     error,
     testType,
 
-    // Funções simplificadas
+    // Função única
+    runAllTests,
+
+    // Funções individuais
     testDownload,
     testUpload,
     testPing,
-
-    // Funções de teste avançadas
-    startDownloadTest,
-    startUploadTest,
-    startPingTest,
 
     // Funções de controle
     cancelTest,
