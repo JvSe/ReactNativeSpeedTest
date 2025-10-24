@@ -1,4 +1,4 @@
-# react-native-speed-test
+# rn-speed-test
 
 A React Native library for testing network speed (download, upload) and ping latency, compatible with Expo and bare React Native projects.
 
@@ -16,7 +16,7 @@ A React Native library for testing network speed (download, upload) and ping lat
 ### Expo (Recommended)
 
 ```bash
-npx expo install react-native-speed-test
+npx expo install rn-speed-test
 ```
 
 Then add the plugin to your `app.config.js`:
@@ -24,7 +24,7 @@ Then add the plugin to your `app.config.js`:
 ```javascript
 export default {
   expo: {
-    plugins: ['react-native-speed-test'],
+    plugins: ['rn-speed-test'],
   },
 };
 ```
@@ -32,9 +32,9 @@ export default {
 ### React Native CLI
 
 ```bash
-npm install react-native-speed-test
+npm install rn-speed-test
 # or
-yarn add react-native-speed-test
+yarn add rn-speed-test
 ```
 
 #### iOS
@@ -54,7 +54,7 @@ No additional setup required for Android.
 ### Basic Usage
 
 ```typescript
-import SpeedTest from 'react-native-speed-test';
+import SpeedTest from 'rn-speed-test';
 
 // Test download speed
 SpeedTest.testDownloadSpeed({
@@ -85,7 +85,7 @@ console.log('Network type:', networkType.type); // 'WIFI', '2G', '3G', 'LTE', et
 
 ```typescript
 import { useEffect } from 'react';
-import SpeedTest, { SpeedTestProgress, SpeedTestResult } from 'react-native-speed-test';
+import SpeedTest, { SpeedTestProgress, SpeedTestResult } from 'rn-speed-test';
 
 export default function SpeedTestScreen() {
   useEffect(() => {
@@ -141,10 +141,7 @@ export default function SpeedTestScreen() {
 ```typescript
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, Alert } from 'react-native';
-import SpeedTest, {
-  NetworkType,
-  SpeedTestResult,
-} from 'react-native-speed-test';
+import SpeedTest, { NetworkType, SpeedTestResult } from 'rn-speed-test';
 
 export default function SpeedTestApp() {
   const [networkType, setNetworkType] = useState<NetworkType | null>(null);

@@ -1,6 +1,7 @@
 {
-  "name": "@jvsen/rn-speed-test",
+  "name": "rn-speed-test",
   "version": "1.0.0",
+  "private": false,
   "description": "React Native Speed Test library compatible with Expo - Test download, upload speeds and ping latency",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -34,7 +35,7 @@
     "type": "git",
     "url": "git+https://github.com/JvSe/rn-speed-test.git"
   },
-  "author": "Your Name <your.email@example.com>",
+  "author": "Joao Vitor Soares <joaovitorsoares12@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "babel-preset-expo": "~10.0.0"

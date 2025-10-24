@@ -1,4 +1,4 @@
-# URLs de Teste - React Native Speed Test
+# URLs de Teste - rn-speed-test
 
 ## URLs Padrão Funcionais
 
@@ -56,7 +56,7 @@ https://www.google.com
 ## Como Usar URLs Personalizadas
 
 ```typescript
-import SpeedTest from 'react-native-speed-test';
+import SpeedTest from 'rn-speed-test';
 
 // Usar URL personalizada para download
 SpeedTest.testDownloadSpeed({
@@ -123,7 +123,7 @@ SpeedTest.testPing({
 ## Exemplo Completo
 
 ```typescript
-import SpeedTest from 'react-native-speed-test';
+import SpeedTest from 'rn-speed-test';
 
 // Configuração com URLs personalizadas
 const config = {

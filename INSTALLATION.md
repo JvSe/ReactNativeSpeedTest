@@ -5,7 +5,7 @@
 ### 1. Instalar o pacote
 
 ```bash
-npx expo install react-native-speed-test
+npx expo install rn-speed-test
 ```
 
 ### 2. Configurar o plugin no app.config.js
@@ -13,7 +13,7 @@ npx expo install react-native-speed-test
 ```javascript
 export default {
   expo: {
-    plugins: ['react-native-speed-test'],
+    plugins: ['rn-speed-test'],
   },
 };
 ```
@@ -21,7 +21,7 @@ export default {
 ### 3. Usar no seu código
 
 ```typescript
-import SpeedTest from 'react-native-speed-test';
+import SpeedTest from 'rn-speed-test';
 
 // Testar velocidade de download
 SpeedTest.testDownloadSpeed({
@@ -40,9 +40,9 @@ SpeedTest.addListener('onCompleteTest', (data) => {
 ### 1. Instalar o pacote
 
 ```bash
-npm install react-native-speed-test
+npm install rn-speed-test
 # ou
-yarn add react-native-speed-test
+yarn add rn-speed-test
 ```
 
 ### 2. Para iOS - Executar pod install
@@ -56,7 +56,7 @@ cd ios && pod install
 ### 4. Usar no seu código
 
 ```typescript
-import SpeedTest from 'react-native-speed-test';
+import SpeedTest from 'rn-speed-test';
 
 // Testar velocidade de download
 SpeedTest.testDownloadSpeed({

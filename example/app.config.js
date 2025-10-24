@@ -24,6 +24,6 @@ export default {
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: ['react-native-speed-test'],
+    plugins: ['rn-speed-test'],
   },
 };

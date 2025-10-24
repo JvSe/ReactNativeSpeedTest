@@ -16,5 +16,5 @@ jobs:
       - run: npm ci
       - uses: JS-DevTools/npm-publish@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          registry: 'https://npm.pkg.github.com'
+          token: ${{ secrets.NPM_TOKEN }}
+          registry: 'https://registry.npmjs.org'
