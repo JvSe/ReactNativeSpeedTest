@@ -307,10 +307,6 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
       // Executar teste de ping
       const pingLatency = await testPing();
 
-      setIsRunning(false);
-      setTestType(null);
-      setProgress(100);
-
       return {
         downloadSpeed,
         uploadSpeed,
@@ -321,6 +317,10 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
       setIsRunning(false);
       setTestType(null);
       throw err;
+    } finally {
+      setIsRunning(false);
+      setTestType(null);
+      setError(null);
     }
   }, [testDownload, testUpload, testPing]);
 
