@@ -42,6 +42,9 @@ public class RNSpeedTestModule extends ReactContextBaseJavaModule {
   @Override
   public void onCatalystInstanceDestroy() {
     hasListeners = false;
+    if (executorService != null) {
+      executorService.shutdown();
+    }
     super.onCatalystInstanceDestroy();
   }
 
@@ -298,17 +301,6 @@ public class RNSpeedTestModule extends ReactContextBaseJavaModule {
     }
   }
 
-  @ReactMethod
-  public void cancelTest(Promise promise) {
-    try {
-      if (mSpeedTestSocket != null) {
-        mSpeedTestSocket.forceStopTask();
-      }
-      promise.resolve(null);
-    } catch (Exception e) {
-      promise.reject("CANCEL_ERROR", e.getMessage());
-    }
-  }
 
   @Override
   public String getName() {
