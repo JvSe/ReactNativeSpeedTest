@@ -130,14 +130,18 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         setCurrentSpeed(0);
         setProgress(0);
 
+        let isResolved = false;
+
         const listener = SpeedTest.addListener(
           'onCompleteTest',
           (data: SpeedTestResult) => {
-            if (testType === 'download') {
+            if (!isResolved) {
+              isResolved = true;
               setIsRunning(false);
               setTestType(null);
               setProgress(100);
               listener.remove();
+              errorListener.remove();
               resolve(data.speed);
             }
           }
@@ -146,11 +150,15 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         const errorListener = SpeedTest.addListener(
           'onErrorTest',
           (data: { message: string }) => {
-            setIsRunning(false);
-            setTestType(null);
-            setError(data.message);
-            errorListener.remove();
-            reject(new Error(data.message));
+            if (!isResolved) {
+              isResolved = true;
+              setIsRunning(false);
+              setTestType(null);
+              setError(data.message);
+              listener.remove();
+              errorListener.remove();
+              reject(new Error(data.message));
+            }
           }
         );
 
@@ -167,7 +175,7 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         reject(err);
       }
     });
-  }, [testType]);
+  }, []);
 
   // Função para iniciar teste de upload
   const testUpload = useCallback((): Promise<number> => {
@@ -179,14 +187,18 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         setCurrentSpeed(0);
         setProgress(0);
 
+        let isResolved = false;
+
         const listener = SpeedTest.addListener(
           'onCompleteTest',
           (data: SpeedTestResult) => {
-            if (testType === 'upload') {
+            if (!isResolved) {
+              isResolved = true;
               setIsRunning(false);
               setTestType(null);
               setProgress(100);
               listener.remove();
+              errorListener.remove();
               resolve(data.speed);
             }
           }
@@ -195,11 +207,15 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         const errorListener = SpeedTest.addListener(
           'onErrorTest',
           (data: { message: string }) => {
-            setIsRunning(false);
-            setTestType(null);
-            setError(data.message);
-            errorListener.remove();
-            reject(new Error(data.message));
+            if (!isResolved) {
+              isResolved = true;
+              setIsRunning(false);
+              setTestType(null);
+              setError(data.message);
+              listener.remove();
+              errorListener.remove();
+              reject(new Error(data.message));
+            }
           }
         );
 
@@ -216,7 +232,7 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         reject(err);
       }
     });
-  }, [testType]);
+  }, []);
 
   // Função para iniciar teste de ping
   const testPing = useCallback((): Promise<number> => {
@@ -228,14 +244,18 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         setCurrentSpeed(0);
         setProgress(0);
 
+        let isResolved = false;
+
         const listener = SpeedTest.addListener(
           'onCompleteTest',
           (data: SpeedTestResult) => {
-            if (testType === 'ping') {
+            if (!isResolved) {
+              isResolved = true;
               setIsRunning(false);
               setTestType(null);
               setProgress(100);
               listener.remove();
+              errorListener.remove();
               resolve(data.latency || data.speed);
             }
           }
@@ -244,11 +264,15 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         const errorListener = SpeedTest.addListener(
           'onErrorTest',
           (data: { message: string }) => {
-            setIsRunning(false);
-            setTestType(null);
-            setError(data.message);
-            errorListener.remove();
-            reject(new Error(data.message));
+            if (!isResolved) {
+              isResolved = true;
+              setIsRunning(false);
+              setTestType(null);
+              setError(data.message);
+              listener.remove();
+              errorListener.remove();
+              reject(new Error(data.message));
+            }
           }
         );
 
@@ -264,7 +288,7 @@ export const useSpeedTest = (): UseSpeedTestReturn => {
         reject(err);
       }
     });
-  }, [testType]);
+  }, []);
 
   // Função única para executar todos os testes
   const runAllTests = useCallback(async () => {
