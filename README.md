@@ -59,7 +59,110 @@ No additional setup required for Android.
 
 ## Usage
 
-### Basic Usage
+### Using Hooks (Recommended)
+
+```typescript
+import React from 'react';
+import { View, Text, Button } from 'react-native';
+import { useSpeedTest } from 'rn-speed-test';
+
+export default function SpeedTestComponent() {
+  const {
+    isRunning,
+    currentSpeed,
+    downloadResult,
+    uploadResult,
+    pingResult,
+    startDownloadTest,
+    startUploadTest,
+    startPingTest,
+    cancelTest,
+  } = useSpeedTest();
+
+  return (
+    <View>
+      <Text>Running: {isRunning ? 'Yes' : 'No'}</Text>
+      <Text>Current Speed: {currentSpeed.toFixed(2)} Mbps</Text>
+
+      {downloadResult && (
+        <Text>Download: {downloadResult.speed.toFixed(2)} Mbps</Text>
+      )}
+
+      <Button
+        title="Test Download"
+        onPress={() => startDownloadTest()}
+        disabled={isRunning}
+      />
+
+      <Button title="Cancel Test" onPress={cancelTest} disabled={!isRunning} />
+    </View>
+  );
+}
+```
+
+### Using Simplified Interface
+
+```typescript
+import React from 'react';
+import { useSpeedTest } from 'rn-speed-test';
+
+export default function SimpleSpeedTest() {
+  const {
+    isRunning,
+    downloadSpeed,
+    uploadSpeed,
+    pingLatency,
+    testDownload,
+    testUpload,
+    testPing,
+  } = useSpeedTest();
+
+  return (
+    <View>
+      <Text>
+        Download:{' '}
+        {downloadSpeed ? `${downloadSpeed.toFixed(2)} Mbps` : 'Not tested'}
+      </Text>
+      <Text>
+        Upload: {uploadSpeed ? `${uploadSpeed.toFixed(2)} Mbps` : 'Not tested'}
+      </Text>
+      <Text>
+        Ping: {pingLatency ? `${pingLatency.toFixed(0)} ms` : 'Not tested'}
+      </Text>
+
+      <Button title="Test Download" onPress={testDownload} />
+      <Button title="Test Upload" onPress={testUpload} />
+      <Button title="Test Ping" onPress={testPing} />
+    </View>
+  );
+}
+```
+
+### Using Network Monitor Hook
+
+```typescript
+import React from 'react';
+import { useNetworkMonitor } from 'rn-speed-test';
+
+export default function NetworkInfo() {
+  const { networkType, isConnected, isLoading, refreshNetworkType } =
+    useNetworkMonitor();
+
+  return (
+    <View>
+      <Text>Connected: {isConnected ? 'Yes' : 'No'}</Text>
+      <Text>Type: {networkType?.type || 'Unknown'}</Text>
+      <Button
+        title="Refresh"
+        onPress={refreshNetworkType}
+        disabled={isLoading}
+      />
+    </View>
+  );
+}
+```
+
+### Basic Usage (Class-based)
 
 ```typescript
 import SpeedTest from 'rn-speed-test';
@@ -293,6 +396,64 @@ O pacote usa URLs reais e funcionais para testes de velocidade:
 - **Ping**: `https://www.google.com` (servidor confiável para ping)
 
 Você pode usar suas próprias URLs se necessário, mas as URLs padrão são otimizadas para testes de velocidade.
+
+## Hooks API Reference
+
+### useSpeedTest
+
+Hook principal para testes de velocidade com funcionalidades completas e interface simplificada.
+
+```typescript
+const {
+  // Estados
+  isRunning: boolean;
+  currentSpeed: number;
+  progress: number;
+  networkType: NetworkType | null;
+
+  // Resultados simples
+  downloadSpeed: number | null;
+  uploadSpeed: number | null;
+  pingLatency: number | null;
+
+  // Resultados completos
+  downloadResult: SpeedTestResult | null;
+  uploadResult: SpeedTestResult | null;
+  pingResult: SpeedTestResult | null;
+
+  // Estados de erro
+  error: string | null;
+  testType: 'download' | 'upload' | 'ping' | null;
+
+  // Funções simplificadas
+  testDownload: () => void;
+  testUpload: () => void;
+  testPing: () => void;
+
+  // Funções avançadas
+  startDownloadTest: (config?: SpeedTestConfig) => void;
+  startUploadTest: (config?: SpeedTestConfig) => void;
+  startPingTest: (config: PingConfig) => void;
+  cancelTest: () => void;
+  resetResults: () => void;
+  getNetworkType: () => Promise<void>;
+  setError: (error: string | null) => void;
+} = useSpeedTest();
+```
+
+### useNetworkMonitor
+
+Hook para monitorar informações de rede.
+
+```typescript
+const {
+  networkType: NetworkType | null;
+  isConnected: boolean;
+  isLoading: boolean;
+  error: string | null;
+  refreshNetworkType: () => Promise<void>;
+} = useNetworkMonitor();
+```
 
 ## API Reference
 

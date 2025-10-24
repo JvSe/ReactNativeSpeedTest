@@ -208,3 +208,7 @@ export class SpeedTest {
 }
 
 export default SpeedTest;
+
+// Export hooks
+export { useNetworkMonitor } from './hooks/useNetworkMonitor';
+export { useSpeedTest } from './hooks/useSpeedTest';

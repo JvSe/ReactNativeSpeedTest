@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import SpeedTest, { NetworkType, SpeedTestResult } from 'rn-speed-test';
 
 export default function App() {
   const [networkType, setNetworkType] = useState<NetworkType | null>(null);
