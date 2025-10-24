@@ -32,7 +32,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/JvSe/rn-speed-test"
+    "url": "git+https://github.com/JvSe/rn-speed-test.git"
   },
   "author": "Your Name <your.email@example.com>",
   "license": "MIT",
