@@ -1,5 +1,5 @@
 {
-  "name": "rn-speed-test",
+  "name": "@jvsen/rn-speed-test",
   "version": "1.0.0",
   "description": "React Native Speed Test library compatible with Expo - Test download, upload speeds and ping latency",
   "main": "src/index.ts",
@@ -71,5 +71,12 @@
     "tabWidth": 2,
     "trailingComma": "es5",
     "useTabs": false
+  },
+  "bugs": {
+    "url": "https://github.com/JvSe/rn-speed-test/issues"
+  },
+  "homepage": "https://github.com/JvSe/rn-speed-test#readme",
+  "directories": {
+    "example": "example"
   }
 }
